@@ -14,6 +14,19 @@
 ## 2. 算法pipeline
 ![img.png](images/pipeline.png)
 
+
+```mermaid
+flowchat
+st=>start: 开始
+op=>operation: My Operation
+cond=>condition: Yes or No?
+e=>end
+st->op->cond
+cond(yes)->e
+cond(no)->op
+&```
+
+
 ## 3. 接口
 
 #### HHTFilter(eegRaw, componentsRetain)
