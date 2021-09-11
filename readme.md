@@ -1,6 +1,8 @@
-# 脑电专注度检测
+# 脑电专注度&放松度检测
 
 ## 1. 理论依据
+
+### 专注度
 
 目前，应用最广泛的评价专注度方法是Pope等于1995年提出的根据alpha,beta，theta频段能量计算认知专注度的公式(Pope et al., 1995)。
 即beta频段能量与alpha和theta频段能量之和的比值，根据现今对脑电信号的理解，这是因为人们在注意力集中或者警觉的情况下脑电信号主要表现为beta频段的信号，
@@ -8,8 +10,14 @@
 
 ![计算公式](./images/attention_score.png)
 
-[1]李翀.基于机器人辅助神经康复的患者训练参与度与专注度研究.2017.清华大学,PhD dissertation.
+[1] 李翀.基于机器人辅助神经康复的患者训练参与度与专注度研究.2017.清华大学,PhD dissertation.
 
+
+### 放松度
+许多研究发现，𝛼波成分在放松时会增加，在有压力时会减小, 因此𝛼波的含量被认为可以作为平静放松程度的一个指标。而一般成年人脑电中𝛿波和𝛾波所占比例非常小[2]。
+![计算公式](./images/meditation.png)
+
+[2] 吴轶. 基于脑电的多模态情绪放松系统的实现与研究[D].上海交通大学,2020.
 
 ## 2. 算法pipeline
 ![img.png](images/pipeline.png)
@@ -35,5 +43,17 @@
     :param observe_window: smooth时间窗口大小
     :param frame_window: 分帧的窗口大小
     :return: 输出有效attention得分
+
+#### get_rhythm_features(oneframe, fs):
+    提取信号节律波特征值
+    :param oneframe: eeg信号
+    :param fs: 采样频率
+    :return: 特征值集合
+
+#### get_meditation_score(features):
+    获得当前帧的瞬时放松度
+    :param oneframe: 一帧脑电数据
+    :param fs: 信号采样率
+    :return: 当前放松度得分
 
 

@@ -5,7 +5,7 @@
 import json
 from tkinter import _flatten
 import numpy as np
-from featureExtraction import HHTFilter, get_attention_score, smooth_atten_score
+from featureExtraction import HHTFilter, get_attention_score, smooth_score, get_rhythm_features, get_meditation_score
 
 if __name__ == '__main__':
     ## 读取data, 定义采样频率
@@ -23,12 +23,24 @@ if __name__ == '__main__':
     window = 128
     observe_window = 3000  #观测过去3秒的平均专注度
     attention_cache = []
+    meditation_cache = []
+
     for i in range(100):
         eegData = np.array(result[window * i:window * (i + 1)])
         eegRetain = HHTFilter(eegData, [0, 1])
+        # 获得节律波特征
+        spectral_feature = get_rhythm_features(eegData, sfreq)
+        print("rhythm_features is [delta, theta, alpha_low, alpha_high, beta_low, beta_high, gamma_low, gamma_high] \n", spectral_feature.values())
+
         # 计算attention得分
-        atten_score = get_attention_score(eegData, sfreq)
+        atten_score = get_attention_score(spectral_feature)
         attention_cache.append(atten_score)
         # 均值窗口输出
-        out_score = smooth_atten_score(attention_cache, observe_window, window)
-        print("windows {} attention score is {:.0f}.".format(i, out_score * 100))
+        out_attention_score = smooth_score(attention_cache, observe_window, window)
+        print("windows {} attention score is {:.0f}.".format(i, out_attention_score * 100))
+        # 计算meditation得分
+        medita_score = get_meditation_score(spectral_feature)
+        meditation_cache.append(medita_score)
+        # 均值窗口输出
+        out_meditation_score = smooth_score(meditation_cache, observe_window, window)
+        print("windows {} meditation score is {:.0f}.".format(i, out_meditation_score * 100))
