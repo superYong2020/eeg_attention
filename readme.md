@@ -57,3 +57,9 @@
     :return: 当前放松度得分
 
 
+# 更新日志
+2021.9.27 更新attention pipeline,引入小波求能量（fix_attention.py和featureExtraction.py）
+
+
+# 结果对比
+![attention得分](./images/attention_result.png)

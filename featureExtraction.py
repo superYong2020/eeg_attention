@@ -1,79 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from pyhht import EMD
-
-
-def HHTFilter(eegRaw, componentsRetain):
-    '''
-    滤波，去除眼电干扰
-    :param eegRaw: 分帧后的数据
-    :param componentsRetain: 需要保留的信号成分
-    :return: 去除眼电后的干净数据
-    '''
-    # 进行EMD分解
-    decomposer = EMD(eegRaw)
-    # 获取EMD分解后的IMF成分
-    imfs = decomposer.decompose()
-    # 选取需要保留的EMD组分，并且将其合成信号
-    eegRetain = np.sum(imfs[componentsRetain], axis=0)
-    # 可视化
-    # # 绘图
-    # plt.figure(figsize=(10, 7))
-    # # 绘制原始数据
-    # plt.plot(eegRaw, label='RawData')
-    # # 绘制保留组分合成的数据
-    # plt.plot(eegRetain, label='HHTData')
-    # # 绘制标题
-    # plt.title('RawData-----HHTData',fontsize=20)
-    # # 绘制图例
-    # plt.legend()
-    # plt.show()
-    return eegRetain
-
-
-# 定义HHT的计算分析函数
-def HHTAnalysis(eegRaw, fs):
-    # 进行EMD分解
-    decomposer = EMD(eegRaw)
-    # 获取EMD分解后的IMF成分
-    imfs = decomposer.decompose()
-    # 分解后的组分数
-    n_components = imfs.shape[0]
-    # # 定义绘图，包括原始数据以及各组分数据
-    # fig, axes = plt.subplots(n_components + 1, 2, figsize=(10, 7), sharex=True, sharey=False)
-    # # 绘制原始数据
-    # axes[0][0].plot(eegRaw)
-    # # 原始数据的Hilbert变换
-    # eegRawHT = hilbert(eegRaw)
-    # # 绘制原始数据Hilbert变换的结果
-    # axes[0][0].plot(abs(eegRawHT))
-    # # 设置绘图标题
-    # axes[0][0].set_title('Raw Data')
-    # # 计算Hilbert变换后的瞬时频率
-    # instf, timestamps = tftb.processing.inst_freq(eegRawHT)
-    # # 绘制瞬时频率，这里乘以fs是正则化频率到真实频率的转换
-    # axes[0][1].plot(timestamps, instf * fs)
-    # # 计算瞬时频率的均值和中位数
-    # axes[0][1].set_title('Freq_Mean{:.2f}----Freq_Median{:.2f}'.format(np.mean(instf * fs), np.median(instf * fs)))
-    #
-    # # 计算并绘制各个组分
-    # for iter in range(n_components):
-    #     # 绘制分解后的IMF组分
-    #     axes[iter + 1][0].plot(imfs[iter])
-    #     # 计算各组分的Hilbert变换
-    #     imfsHT = hilbert(imfs[iter])
-    #     # 绘制各组分的Hilber变换
-    #     axes[iter + 1][0].plot(abs(imfsHT))
-    #     # 设置图名
-    #     axes[iter + 1][0].set_title('IMF{}'.format(iter))
-    #     # 计算各组分Hilbert变换后的瞬时频率
-    #     instf, timestamps = tftb.processing.inst_freq(imfsHT)
-    #     # 绘制瞬时频率，这里乘以fs是正则化频率到真实频率的转换
-    #     axes[iter + 1][1].plot(timestamps, instf * fs)
-    #     # 计算瞬时频率的均值和中位数
-    #     axes[iter + 1][1].set_title('Freq_Mean{:.2f}----Freq_Median{:.2f}'.format(np.mean(instf * fs), np.median(instf * fs)))
-    # plt.show()
-
+import pywt
 
 def get_attention_score(features):
     '''
@@ -93,38 +20,51 @@ def get_attention_score(features):
     #     oneframe, 14, 20, fs, frameLength, 'β_low wave'))) / frameLength
     # y_beta2 = sum(abs(rhythmExtraction(
     #     oneframe, 21, 30, fs, frameLength, 'β_high wave'))) / frameLength
-    attention_score = (features["beta_low"] + features["beta_high"]) / \
-                      (features["alpha_low"] + features["alpha_high"] + features["theta"])
+    attention_score = (features["beta"]) / (features["alpha"] + features["theta"])
     return attention_score
 
 
-def get_rhythm_features(oneframe, fs):
+# 需要分析的四个频段
+iter_freqs = [
+    {'name': 'Delta', 'fmin': 0, 'fmax': 4},
+    {'name': 'Theta', 'fmin': 4, 'fmax': 8},
+    {'name': 'Alpha', 'fmin': 8, 'fmax': 13},
+    {'name': 'Beta', 'fmin': 13, 'fmax': 35},
+]
+
+def get_rhythm_features(data, fs, wavelet, maxlevel=8):
     '''
-    提取信号节律波特征值
+    提取信号节律波特征值 # 小波包分解
     :param oneframe: eeg信号
     :param fs: 采样频率
     :return: 特征值集合
     '''
-    frameLength = len(oneframe)
-    y_delta = sum(abs(rhythmExtraction(
-        oneframe, 1, 3, fs, frameLength, 'δ wave'))) / frameLength
-    y_theta = sum(abs(rhythmExtraction(
-        oneframe, 4, 7, fs, frameLength, 'θ wave'))) / frameLength
-    y_alpha1 = sum(abs(rhythmExtraction(
-        oneframe, 8, 10, fs, frameLength, 'α_low wave'))) / frameLength
-    y_alpha2 = sum(abs(rhythmExtraction(
-        oneframe, 11, 13, fs, frameLength, 'α_high wave'))) / frameLength
-    y_beta1 = sum(abs(rhythmExtraction(
-        oneframe, 14, 20, fs, frameLength, 'β_low wave'))) / frameLength
-    y_beta2 = sum(abs(rhythmExtraction(
-        oneframe, 21, 30, fs, frameLength, 'β_high wave'))) / frameLength
-    y_gamma1 = sum(abs(rhythmExtraction(
-        oneframe, 31, 40, fs, frameLength, 'δ wave'))) / frameLength
-    y_gamma2 = sum(abs(rhythmExtraction(
-        oneframe, 41, 50, fs, frameLength, 'δ wave'))) / frameLength
-    spectral_feature = {"delta": y_delta, "theta": y_theta, "alpha_low": y_alpha1,
-                        "alpha_high": y_alpha2, "beta_low": y_beta1, "beta_high": y_beta2,
-                        "gamma_low": y_gamma1, "gamma_high": y_gamma2}
+    wp = pywt.WaveletPacket(data=data, wavelet=wavelet, mode='symmetric', maxlevel=maxlevel)
+    # 频谱由低到高的对应关系，这里需要注意小波变换的频带排列默认并不是顺序排列，所以这里需要使用’freq‘排序。
+    freqTree = [node.path for node in wp.get_level(maxlevel, 'freq')]
+    # 计算maxlevel最小频段的带宽
+    freqBand = fs / (2 ** maxlevel)
+    # 定义能量数组
+    energy = []
+    # 循环遍历计算四个频段对应的能量
+    for iter in range(len(iter_freqs)):
+        iterEnergy = 0.0
+        for i in range(len(freqTree)):
+            # 第i个频段的最小频率
+            bandMin = i * freqBand
+            # 第i个频段的最大频率
+            bandMax = bandMin + freqBand
+            # 判断第i个频段是否在要分析的范围内
+            if (iter_freqs[iter]['fmin'] <= bandMin and iter_freqs[iter]['fmax'] >= bandMax):
+                # 计算对应频段的累加和
+                iterEnergy += pow(np.linalg.norm(wp[freqTree[i]].data, ord=None), 2)
+        # 保存四个频段对应的能量和
+        energy.append(iterEnergy)
+    # # 绘制能量分布图
+    # plt.plot([xLabel['name'] for xLabel in iter_freqs], energy, lw=0, marker='o')
+    # plt.title('能量分布')
+    # plt.show()
+    spectral_feature = {"delta": energy[0], "theta": energy[1], "alpha": energy[2], "beta": energy[3]}
     return spectral_feature
 
 
@@ -135,9 +75,7 @@ def get_meditation_score(features):
     :param fs: 信号采样率
     :return: 当前放松度得分
     '''
-    meditation_score = (features["alpha_low"] + features["alpha_high"]) / \
-                       (features["alpha_low"] + features["alpha_high"] +
-                        features["theta"] + features["beta_low"] + features["beta_high"])
+    meditation_score = (features["alpha"]) / (features["alpha"] +features["theta"] + features["beta"])
     return meditation_score
 
 
@@ -155,26 +93,3 @@ def rhythmExtraction(oneFrame, f_low, f_high, fs, frameLength, title):
     # wavplot(y_time,title)
     return y_time
 
-
-def wavplot(y_time, title):
-    # 各类节律波可视化
-    t = range(len(y_time))
-    plt.plot(t, y_time)
-    plt.title(title, fontsize=20)
-    plt.show()
-    return 0
-
-
-def smooth_score(score_cache, observe_window, frame_window):
-    '''
-    attention得分平滑处理
-    :param attention_cache: 历史attention得分
-    :param observe_window: smooth时间窗口大小
-    :param frame_window: 分帧的窗口大小
-    :return: 输出有效attention得分
-    '''
-    if len(score_cache) > int(observe_window / frame_window):
-        out_score = np.mean(score_cache[-int(observe_window / frame_window):])
-    else:
-        out_score = np.mean(score_cache)
-    return out_score
