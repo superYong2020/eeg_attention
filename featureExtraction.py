@@ -71,7 +71,7 @@ def get_rhythm_features(data, fs, wavelet, maxlevel=8):
 
 ################  移植看这里 ####################
 def get_rhythm_features_fft(data, fs):
-    spectral_feature = {"delta": [], "theta": [], "alpha": [], "beta": []}
+    spectral_feature = {"delta": 0, "theta": 0, "alpha": 0, "beta": 0}
     data_fft = abs(np.fft.fft(data, 512))
     N = len(data_fft)
     data_fft = data_fft[0:int(N/2)]
@@ -79,15 +79,13 @@ def get_rhythm_features_fft(data, fs):
     t = np.arange(0, len(data) / fs, 1.0 / fs)
     for i, item in enumerate(fr):
         if 0 < item < 4:
-            spectral_feature["delta"].append(data_fft[i] ** 2)
+            spectral_feature["delta"] += data_fft[i] ** 2
         elif 4 < item < 8:
-            spectral_feature["theta"].append(data_fft[i] ** 2)
+            spectral_feature["theta"] += data_fft[i] ** 2
         elif 8 < item < 13:
-            spectral_feature["alpha"].append(data_fft[i] ** 2)
+            spectral_feature["alpha"] += data_fft[i] ** 2
         elif 13 < item < 35:
-            spectral_feature["beta"].append(data_fft[i] ** 2)
-    for key, value in spectral_feature.items():
-        spectral_feature[key] = np.sum(value)
+            spectral_feature["beta"] += data_fft[i] ** 2
     return spectral_feature
 ################  END ####################
 
