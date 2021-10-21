@@ -5,7 +5,7 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from featureExtraction import get_attention_score, get_rhythm_features, get_meditation_score
+from featureExtraction import get_attention_score, get_rhythm_features_fft
 
 # 基础配置
 eeg = []
@@ -28,14 +28,20 @@ index = 0
 while (index+1)*windows < len(eeg):
     check_window = np.array(eeg[index*windows:(index+1)*windows])
     valid = np.where(abs(check_window) > 800)[0].shape[0] < 10
-    spectral_feature = get_rhythm_features(check_window, sfreq, 'db4')
+    # spectral_feature = get_rhythm_features(check_window, sfreq, 'haar')
+
+    ################  移植看这里 ####################
+    ## 每个窗口求节律波
+    spectral_feature = get_rhythm_features_fft(check_window, sfreq)
     if valid:
+        # 求专注度值
         atten_score = get_attention_score(spectral_feature)
     else:
         atten_score = 0
     if atten_score > 1:
         atten_score = 1
     atten_score_our.append(atten_score*100)
+    ################  END ####################
     index += 1
 
 # 三帧窗口平均平滑
@@ -45,7 +51,6 @@ for i in range(len(atten_score_our)):
         new_y.append(atten_score_our[i])
     else:
         new_y.append(np.mean(atten_score_our[i-3:i]))
-
 
 ## 可视化
 from matplotlib.font_manager import FontProperties
@@ -72,5 +77,5 @@ plt.legend(loc='upper left', fontsize=font_size, frameon=True, fancybox=True, fr
            borderpad=0.3, ncol=1, prop=font,
            markerfirst=True, markerscale=1, numpoints=1, handlelength=3.5)
 plt.axis([-2, 115, -2, 105])
-plt.savefig('./images/attention_result.png')
+# plt.savefig('./images/attention_result.png')
 plt.show()

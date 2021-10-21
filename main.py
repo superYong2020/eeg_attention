@@ -5,13 +5,13 @@
 import json
 from tkinter import _flatten
 import numpy as np
-from featureExtraction import HHTFilter, get_attention_score, smooth_score, get_rhythm_features, get_meditation_score
+from featureExtraction import get_attention_score, get_rhythm_features, get_meditation_score, get_rhythm_features_fft
 
 if __name__ == '__main__':
     ## 读取data, 定义采样频率
     raw_path = "./data/eegRaw.json"
     data = []
-    sfreq = 512
+    sfreq = 512.0
     with open(raw_path, 'r') as f:
         json_str = json.load(f)
         for item in json_str:
@@ -27,20 +27,29 @@ if __name__ == '__main__':
 
     for i in range(100):
         eegData = np.array(result[window * i:window * (i + 1)])
-        eegRetain = HHTFilter(eegData, [0, 1])
-        # 获得节律波特征
-        spectral_feature = get_rhythm_features(eegData, sfreq)
-        print("rhythm_features is [delta, theta, alpha_low, alpha_high, beta_low, beta_high, gamma_low, gamma_high] \n", spectral_feature.values())
+        # eegRetain = HHTFilter(eegData, [0, 1])
+
+
+        # # 小波变换获得节律波特征
+        # spectral_feature = get_rhythm_features(eegData, sfreq, 'haar')
+        # print("wavelet rhythm_features is [delta, theta, alpha, beta] \n", spectral_feature.values())
+
+        # fft获取节律波特征
+        spectral_feature = get_rhythm_features_fft(eegData, sfreq)
+        print("fft rhythm_features is [delta, theta, alpha, beta] \n", spectral_feature.values())
+
 
         # 计算attention得分
         atten_score = get_attention_score(spectral_feature)
         attention_cache.append(atten_score)
         # 均值窗口输出
-        out_attention_score = smooth_score(attention_cache, observe_window, window)
-        print("windows {} attention score is {:.0f}.".format(i, out_attention_score * 100))
-        # 计算meditation得分
-        medita_score = get_meditation_score(spectral_feature)
-        meditation_cache.append(medita_score)
-        # 均值窗口输出
-        out_meditation_score = smooth_score(meditation_cache, observe_window, window)
-        print("windows {} meditation score is {:.0f}.".format(i, out_meditation_score * 100))
+        print("windows {} attention score is {:.0f}.".format(i, atten_score * 100))
+        # # 计算meditation得分
+        # medita_score = get_meditation_score(spectral_feature)
+        # meditation_cache.append(medita_score)
+        # # 均值窗口输出
+        # # out_meditation_score = smooth_score(meditation_cache, observe_window, window)
+        # # print("windows {} meditation score is {:.0f}.".format(i, out_meditation_score * 100))
+    import matplotlib.pyplot as plt
+    plt.plot(attention_cache)
+    plt.show()
