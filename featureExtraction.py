@@ -20,7 +20,7 @@ def get_attention_score(features):
     #     oneframe, 14, 20, fs, frameLength, 'β_low wave'))) / frameLength
     # y_beta2 = sum(abs(rhythmExtraction(
     #     oneframe, 21, 30, fs, frameLength, 'β_high wave'))) / frameLength
-    attention_score = (features["beta"]) / (features["alpha"] + features["theta"])
+    attention_score = (0.6 * features["beta"]) / (features["alpha"] + features["theta"] + features['delta'])
     return attention_score
 
 
@@ -74,8 +74,8 @@ def get_rhythm_features_fft(data, fs):
     spectral_feature = {"delta": 0, "theta": 0, "alpha": 0, "beta": 0}
     data_fft = abs(np.fft.fft(data, 512))
     N = len(data_fft)
-    data_fft = data_fft[0:int(N/2)]
-    fr = np.linspace(0, fs, int(N/2))
+    data_fft = data_fft[0:int(N / 2)]
+    fr = np.linspace(0, fs, int(N / 2))
     t = np.arange(0, len(data) / fs, 1.0 / fs)
     for i, item in enumerate(fr):
         if 0 < item < 4:
@@ -87,6 +87,8 @@ def get_rhythm_features_fft(data, fs):
         elif 13 < item < 35:
             spectral_feature["beta"] += data_fft[i] ** 2
     return spectral_feature
+
+
 ################  END ####################
 
 def get_meditation_score(features):
@@ -113,3 +115,54 @@ def rhythmExtraction(oneFrame, f_low, f_high, fs, frameLength, title):
     y_time = np.fft.ifft(data_fft)
     # wavplot(y_time,title)
     return y_time
+
+
+def get_order_diff_quot(xi=[], fi=[]):
+    if len(xi) > 2 and len(fi) > 2:
+        return (get_order_diff_quot(xi[:len(xi) - 1], fi[:len(fi) - 1]) - get_order_diff_quot(xi[1:len(xi)],
+                                                                                              fi[1:len(fi)])) / float(
+            xi[0] - xi[-1])
+    return (fi[0] - fi[1]) / float(xi[0] - xi[1])
+
+
+def get_Wi(i=0, xi=[]):
+    def Wi(x):
+        result = 1.0
+        for each in range(i):
+            result *= (x - xi[each])
+        return result
+    return Wi
+
+
+def get_Newton_inter(xi=[], fi=[]):
+    def Newton_inter(x):
+        result = fi[0]
+        for i in range(2, len(xi)):
+            result += (get_order_diff_quot(xi[:i], fi[:i]) * get_Wi(i - 1, xi)(x))
+        return result
+    return Newton_inter
+
+
+def data_interpolation(data, enlarge):
+    total_len = len(data) + enlarge
+    x = np.linspace(0, len(data), len(data))
+    x_new = np.linspace(0, len(data), total_len)
+    Nx = get_Newton_inter(x, data)
+    ynew = Nx(x_new)
+    return ynew
+
+
+if __name__ == '__main__':
+    # 插值法验证
+    import math
+    data = [math.sin(item) for item in range(10)]
+    enlarge_num = 10
+    print(data)
+    ynew = data_interpolation(data, enlarge_num)
+    import pylab as pl
+    pl.subplot(211)
+    pl.plot(data, marker='*')
+    pl.subplot(212)
+    pl.plot(ynew, marker='.')
+    pl.savefig('chazhi.png')
+    pl.show()
