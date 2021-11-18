@@ -20,7 +20,7 @@ def get_attention_score(features):
     #     oneframe, 14, 20, fs, frameLength, 'β_low wave'))) / frameLength
     # y_beta2 = sum(abs(rhythmExtraction(
     #     oneframe, 21, 30, fs, frameLength, 'β_high wave'))) / frameLength
-    attention_score = (0.6 * features["beta"]) / (features["alpha"] + features["theta"] + features['delta'])
+    attention_score = (features["beta"]) / (1 * features["alpha"] + 0.15 * features["theta"])
     return attention_score
 
 
@@ -72,6 +72,7 @@ def get_rhythm_features(data, fs, wavelet, maxlevel=8):
 ################  移植看这里 ####################
 def get_rhythm_features_fft(data, fs):
     spectral_feature = {"delta": 0, "theta": 0, "alpha": 0, "beta": 0}
+    data = (data - np.mean(data)) / np.std(data)
     data_fft = abs(np.fft.fft(data, 512))
     N = len(data_fft)
     data_fft = data_fft[0:int(N / 2)]
