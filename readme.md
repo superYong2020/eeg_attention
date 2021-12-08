@@ -58,6 +58,7 @@
 
 
 # 更新日志
+2021.12.8 小包返回8个节律波能量值，移植看featureExtraction.py的get_attention_score get_meditation_score get_rhythm_features_fft三个接口
 2021.9.27 更新attention pipeline,引入小波求能量（fix_attention.py和featureExtraction.py）
 
 

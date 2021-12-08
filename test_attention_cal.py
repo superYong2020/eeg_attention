@@ -24,9 +24,6 @@ while (frame + 1) * windows < len(data):
     atten_score = get_attention_score(spectral_feature)
     atten_score_our.append(atten_score * 100)
     frame += 1
-    alpha.append(spectral_feature['alpha'])
-    theta.append(spectral_feature['theta'])
-    beta.append(spectral_feature['beta'])
 
 x = [item / sfreq for item in range(len(data))]
 

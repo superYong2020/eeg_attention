@@ -1,5 +1,4 @@
 import numpy as np
-# import pywt
 
 
 def get_attention_score(features):
@@ -9,79 +8,13 @@ def get_attention_score(features):
     :param fs: 信号采样率
     :return: 当前专注度得分
     '''
-    attention_score = (2 * features["beta"]) / (1 * features["alpha"] + 1 * features["theta"])
+    weight = [2, 1, 1]
+    # attn_score = w_1 * avg_beta / w_2 * avg_alpha + w_3 * avg_theta
+    print(features)
+    attention_score = (weight[0] * (features["low_beta"] + features['high_beta']) / 2) / (
+            weight[1] * (features["low_alpha"] + features['high_alpha']) / 2 + weight[2] * features["theta"])
     return attention_score
 
-
-# 需要分析的四个频段
-iter_freqs = [
-    {'name': 'Delta', 'fmin': 0, 'fmax': 4},
-    {'name': 'Theta', 'fmin': 4, 'fmax': 8},
-    {'name': 'Alpha', 'fmin': 8, 'fmax': 13},
-    {'name': 'Beta', 'fmin': 13, 'fmax': 35},
-]
-
-
-# def get_rhythm_features(data, fs, wavelet, maxlevel=8):
-#     '''
-#     提取信号节律波特征值 # 小波包分解
-#     :param oneframe: eeg信号
-#     :param fs: 采样频率
-#     :return: 特征值集合
-#     '''
-#     wp = pywt.WaveletPacket(data=data, wavelet=wavelet, mode='symmetric', maxlevel=maxlevel)
-#     # 频谱由低到高的对应关系，这里需要注意小波变换的频带排列默认并不是顺序排列，所以这里需要使用’freq‘排序。
-#     freqTree = [node.path for node in wp.get_level(maxlevel, 'freq')]
-#     # 计算maxlevel最小频段的带宽
-#     freqBand = fs / (2 ** maxlevel)
-#     # 定义能量数组
-#     energy = []
-#     # 循环遍历计算四个频段对应的能量
-#     for iter in range(len(iter_freqs)):
-#         iterEnergy = 0.0
-#         for i in range(len(freqTree)):
-#             # 第i个频段的最小频率
-#             bandMin = i * freqBand
-#             # 第i个频段的最大频率
-#             bandMax = bandMin + freqBand
-#             # 判断第i个频段是否在要分析的范围内
-#             if (iter_freqs[iter]['fmin'] <= bandMin and iter_freqs[iter]['fmax'] >= bandMax):
-#                 # 计算对应频段的累加和
-#                 iterEnergy += pow(np.linalg.norm(wp[freqTree[i]].data, ord=None), 2)
-#         # 保存四个频段对应的能量和
-#         energy.append(iterEnergy)
-#     # # 绘制能量分布图
-#     # plt.plot([xLabel['name'] for xLabel in iter_freqs], energy, lw=0, marker='o')
-#     # plt.title('能量分布')
-#     # plt.show()
-#     spectral_feature = {"delta": energy[0], "theta": energy[1], "alpha": energy[2], "beta": energy[3]}
-#     return spectral_feature
-
-
-################  移植看这里 ####################
-def get_rhythm_features_fft(data, fs):
-    spectral_feature = {"delta": [], "theta": [], "alpha": [], "beta": []}
-    data_fft = abs(np.fft.fft(data, 128))  # 更改fft点数
-    N = len(data_fft)
-    data_fft = data_fft[0:int(N / 2)]
-    fr = np.linspace(0, 128, int(N / 2))  # 更改f映射
-    t = np.arange(0, len(data) / fs, 1.0 / fs)
-    for i, item in enumerate(fr):
-        if 0 < item < 4:
-            spectral_feature["delta"].append(data_fft[i] ** 2)
-        elif 4 < item < 8:
-            spectral_feature["theta"].append(data_fft[i] ** 2)
-        elif 8 < item < 13:
-            spectral_feature["alpha"].append(data_fft[i] ** 2)
-        elif 13 < item < 35:
-            spectral_feature["beta"].append(data_fft[i] ** 2)
-    out = {"delta": 0, "theta": 0, "alpha": 0, "beta": 0}
-    for key, value in out.items():
-        out[key] = np.mean(spectral_feature[key])
-    return out
-
-
-################  END ####################
 
 def get_meditation_score(features):
     '''
@@ -90,8 +23,57 @@ def get_meditation_score(features):
     :param fs: 信号采样率
     :return: 当前放松度得分
     '''
-    meditation_score = (features["alpha"]) / (features["alpha"] + features["theta"] + features["beta"])
+    # medit_score = avg_alpha / avg_alpha + avg_theta + avg_beta
+    meditation_score = ((features["low_alpha"] + features['high_alpha']) / 2) / (
+            (features["low_alpha"] + features['high_alpha']) / 2 + features["theta"] + (
+            features["low_beta"] + features['high_beta']) / 2)
     return meditation_score
+
+
+# 需要分析的四个频段
+iter_freqs = {
+    'delta': {'fmin': 0, 'fmax': 4},
+    'theta': {'fmin': 4, 'fmax': 8},
+    'low_alpha': {'fmin': 8, 'fmax': 10},
+    'high_alpha': {'fmin': 10, 'fmax': 13},
+    'low_beta': {'fmin': 13, 'fmax': 20},
+    'high_beta': {'fmin': 20, 'fmax': 35},
+    'low_gamma': {'fmin': 35, 'fmax': 50},
+    'high_gamma': {'fmin': 50, 'fmax': 100}
+}
+
+
+def get_rhythm_features_fft(data, fs):
+    spectral_feature = {item: [] for item in iter_freqs.keys()}
+    data_fft = abs(np.fft.fft(data, 128))  # 更改fft点数
+    N = len(data_fft)
+    data_fft = data_fft[0:int(N / 2)]
+    fr = np.linspace(0, 128, int(N / 2))  # 更改f映射
+    t = np.arange(0, len(data) / fs, 1.0 / fs)
+    for i, item in enumerate(fr):
+        if iter_freqs['delta']['fmin'] < item < iter_freqs['delta']['fmax']:
+            spectral_feature["delta"].append(data_fft[i] ** 2)
+        elif iter_freqs['theta']['fmin'] < item < iter_freqs['theta']['fmax']:
+            spectral_feature["theta"].append(data_fft[i] ** 2)
+        elif iter_freqs['low_alpha']['fmin'] < item < iter_freqs['low_alpha']['fmax']:
+            spectral_feature["low_alpha"].append(data_fft[i] ** 2)
+        elif iter_freqs['high_alpha']['fmin'] < item < iter_freqs['high_alpha']['fmax']:
+            spectral_feature["high_alpha"].append(data_fft[i] ** 2)
+        elif iter_freqs['low_beta']['fmin'] < item < iter_freqs['low_beta']['fmax']:
+            spectral_feature["low_beta"].append(data_fft[i] ** 2)
+        elif iter_freqs['high_beta']['fmin'] < item < iter_freqs['high_beta']['fmax']:
+            spectral_feature["high_beta"].append(data_fft[i] ** 2)
+        elif iter_freqs['low_gamma']['fmin'] < item < iter_freqs['low_gamma']['fmax']:
+            spectral_feature["low_gamma"].append(data_fft[i] ** 2)
+        elif iter_freqs['high_gamma']['fmin'] < item < iter_freqs['high_gamma']['fmax']:
+            spectral_feature["high_gamma"].append(data_fft[i] ** 2)
+    out = {}
+    for key, value in spectral_feature.items():
+        out[key] = np.mean(value)
+    return out
+
+
+################  END ####################
 
 
 def rhythmExtraction(oneFrame, f_low, f_high, fs, frameLength, title):
@@ -105,7 +87,6 @@ def rhythmExtraction(oneFrame, f_low, f_high, fs, frameLength, title):
     data_fft[f2: f3] = 0
     data_fft[f4: frameLength] = 0
     y_time = np.fft.ifft(data_fft)
-    # wavplot(y_time,title)
     return y_time
 
 
@@ -123,6 +104,7 @@ def get_Wi(i=0, xi=[]):
         for each in range(i):
             result *= (x - xi[each])
         return result
+
     return Wi
 
 
@@ -132,12 +114,13 @@ def get_Newton_inter(xi=[], fi=[]):
         for i in range(2, len(xi)):
             result += (get_order_diff_quot(xi[:i], fi[:i]) * get_Wi(i - 1, xi)(x))
         return result
+
     return Newton_inter
 
 
 def data_interpolation_old(data, enlarge):
     total_len = len(data) + enlarge
-    x = list(np.linspace(0, len(data)-1, len(data)))
+    x = list(np.linspace(0, len(data) - 1, len(data)))
     x_new = x.copy()
     # x_new.extend([x[-1] + 0.2])
     print(x)
@@ -154,4 +137,3 @@ def data_interpolation(data, enlarge):
         low = 0 if low < 1 else low - 1
     out = np.random.randint(low=low, high=high, size=enlarge)
     return out
-
