@@ -31,10 +31,10 @@
     :param componentsRetain: 需要保留的信号成分     
     :return: 去除眼电后的干净数据
 
-#### get_attention_score(oneframe, fs)
+#### get_attention_score(features)
     获得当前帧的瞬时专注度
     :param oneframe: 一帧脑电数据
-    :param fs: 信号采样率
+    :param features: 节律波特征
     :return: 当前专注度得分
 
 #### smooth_atten_score(attention_cache, observe_window, frame_window):
@@ -44,17 +44,32 @@
     :param frame_window: 分帧的窗口大小
     :return: 输出有效attention得分
 
-#### get_rhythm_features(oneframe, fs):
+#### get_rhythm_features_fft(oneframe):
     提取信号节律波特征值
     :param oneframe: eeg信号
     :param fs: 采样频率
-    :return: 特征值集合
+    :return: 节律波特征值集合
 
 #### get_meditation_score(features):
     获得当前帧的瞬时放松度
     :param oneframe: 一帧脑电数据
-    :param fs: 信号采样率
+    :param features: 节律波特征
     :return: 当前放松度得分
+
+
+
+## 4. 测试
+### 4.1 专注度
+
+> python test_attention_cal.py
+
+### 4.2 冥想值
+
+> python test_meditation_cal.py
+
+### 4.3 插值算法
+
+> python test_interpolation.py
 
 
 # 更新日志

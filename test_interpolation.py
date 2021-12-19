@@ -2,10 +2,6 @@
 # @Time    : 2021/11/21 3:48 下午 
 # @Author  : Yong Cao
 # @Email   : yongcao_epic@hust.edu.cn
-# -*- coding: utf-8 -*-
-# @Time    : 2021/11/19 12:41
-# @Author  : Yong Cao
-# @Email   : caoyong1@xiaomi.com
 from featureExtraction import data_interpolation
 import matplotlib.pyplot as plt
 
